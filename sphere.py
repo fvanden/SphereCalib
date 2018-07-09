@@ -485,6 +485,7 @@ class GaussSphere():
         if self.var == 'SignalH':
             vmin = min(select)
             vmax = max(select)
+            units = 'PowerH'
         elif self.var == 'Zh':
             units = 'dBZ'
             vmin = -10.
