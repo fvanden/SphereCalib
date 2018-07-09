@@ -45,7 +45,12 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
     elevation = file_handle.variables['Elevation'][:]
     range_r = file_handle.variables['Range'][:]
     
-    data = file_handle.variables[polvar][:] 
+    if polvar == 'Zdr':
+        data1 = file_handle.variables['Zh'][:] 
+        data2 = file_handle.variables['Zv'][:] 
+        data = data1 - data2
+    else:
+        data = file_handle.variables[polvar][:] 
     
     # determine max and min gates
     
@@ -60,6 +65,9 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
     else:
         min_gate = 80
         max_gate = 90
+        
+    vmin = valuesdict[polvar][0]
+    vmax = valuesdict[polvar][1]
        
     
     # plot data #
@@ -70,14 +78,14 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
     
         for r in range(min_gate,max_gate):
             plt.figure()
-            plt.scatter(azimuth,elevation,c=data[r], marker = 's', cmap = cm.jet, vmin = -10, vmax =40.0)
+            plt.scatter(azimuth,elevation,c=data[r], marker = 's', cmap = cm.jet, vmin = vmin, vmax =vmax)
             plt.colorbar()
             plt.title('range' + str(range_r[r]))
             plt.xlabel('Azimuth')
             plt.ylabel('Elevation')
     else:
         plt.figure()
-        plt.scatter(azimuth,elevation,c=data[range_g], marker = 's', cmap = cm.jet, vmin = -10, vmax =40.0)
+        plt.scatter(azimuth,elevation,c=data[range_g], marker = 's', cmap = cm.jet, vmin = vmin, vmax =vmax)
         plt.colorbar()
         plt.title('range' + str(range_r[range_g]))
         plt.xlabel('Azimuth')
@@ -155,6 +163,9 @@ def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_
             
     if gate is not None: 
         r = gate
+        
+    vmin = valuesdict[polvar][0]
+    vmax = valuesdict[polvar][1]
         
     data = data[r]
     res_text = str(int(resolution))
@@ -242,7 +253,7 @@ def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_
          verticalalignment='center',
          transform = ax.transAxes)
     
-    CS = plt.contourf(X,Y,data_grid, cmap = cm.jet, vmin = -10, vmax =40.0)
+    CS = plt.contourf(X,Y,data_grid, cmap = cm.jet, vmin = vmin, vmax =vmax)
     plt.xlabel('Azimuth')
     plt.ylabel('Elevation')
     plt.title(file)
@@ -256,3 +267,10 @@ def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_
                       origin='lower',
                       hold='on')
     plt.clabel(CS2, fmt='%2.1f', colors='k', fontsize=14)
+    
+
+
+valuesdict = {
+    'Zh':[-10.0,40.0],
+    'Zv':[-10.0,40.0],
+    'Zdr':[-4.0,6.0]}
