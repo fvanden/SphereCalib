@@ -70,14 +70,14 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
     
         for r in range(min_gate,max_gate):
             plt.figure()
-            plt.scatter(azimuth,elevation,c=data[r], marker = 's', cmap = cm.jet, vmin = -10, vmax =40.0)
+            plt.scatter(azimuth,elevation,c=data[r], marker = 's', cmap = cm.jet, vmin = 55., vmax =70.0)
             plt.colorbar()
             plt.title('range' + str(range_r[r]))
             plt.xlabel('Azimuth')
             plt.ylabel('Elevation')
     else:
         plt.figure()
-        plt.scatter(azimuth,elevation,c=data[range_g], marker = 's', cmap = cm.jet, vmin = -10, vmax =40.0)
+        plt.scatter(azimuth,elevation,c=data[range_g], marker = 's', cmap = cm.jet, vmin = 55., vmax =70.0)
         plt.colorbar()
         plt.title('range' + str(range_r[range_g]))
         plt.xlabel('Azimuth')
