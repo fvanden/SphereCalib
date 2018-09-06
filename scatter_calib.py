@@ -50,8 +50,11 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
         data2 = file_handle.variables['Zv'][:] 
         data = data1 - data2
     else:
-        data = file_handle.variables[polvar][:] 
-    
+        try:
+            data = file_handle.variables[polvar][:] 
+        except KeyError:
+            print( ("%s does not exist in file")%(polvar) )
+            raise
     # determine max and min gates
     
     resolution = range_r[1] - range_r[0]
@@ -66,9 +69,13 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
         min_gate = 80
         max_gate = 90
         
-    vmin = valuesdict[polvar][0]
-    vmax = valuesdict[polvar][1]
-       
+    try:
+        vmin = valuesdict[polvar][0]
+        vmax = valuesdict[polvar][1]
+    except KeyError:
+        vmin = np.nanmin(data)
+        vmax = np.nanmin(data)
+        print(vmin, vmax)
     
     # plot data #
 
@@ -79,19 +86,21 @@ def simpleScatter(filename, polvar = 'Zh', range_g = None):
         for r in range(min_gate,max_gate):
             plt.figure()
             plt.scatter(azimuth,elevation,c=data[r], marker = 's', cmap = cm.jet, vmin = vmin, vmax =vmax)
-            plt.colorbar()
+            cbar = plt.colorbar()
+            cbar.set_label(polvar)
             plt.title('range' + str(range_r[r]))
             plt.xlabel('Azimuth')
             plt.ylabel('Elevation')
     else:
         plt.figure()
         plt.scatter(azimuth,elevation,c=data[range_g], marker = 's', cmap = cm.jet, vmin = vmin, vmax =vmax)
-        plt.colorbar()
+        cbar = plt.colorbar()
+        cbar.set_label(polvar)
         plt.title('range' + str(range_r[range_g]))
         plt.xlabel('Azimuth')
         plt.ylabel('Elevation')
 
-def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_elev_interp = 0.5):
+def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4, res_elev_interp = 0.5):
     """
     Interpolates sphere calibration to a regular grid (very simple nearest
     neighbour interpolation, requires amelioration) and plots a contour plot
@@ -164,8 +173,14 @@ def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_
     if gate is not None: 
         r = gate
         
-    vmin = valuesdict[polvar][0]
-    vmax = valuesdict[polvar][1]
+        
+    try:    
+        vmin = valuesdict[polvar][0]
+        vmax = valuesdict[polvar][1]
+    except KeyError:
+        vmin = np.nanmin(data)
+        vmax = np.nanmax(data)
+        print(vmin, vmax)
         
     data = data[r]
     res_text = str(int(resolution))
@@ -258,7 +273,7 @@ def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_
     plt.ylabel('Elevation')
     plt.title(file)
     cbar = plt.colorbar()
-    cbar.set_label('dBZ', rotation=90)
+    cbar.set_label(polvar, rotation=90)
     
     CS2 = plt.contour(CS, levels=CS.levels,
                       colors='k',
@@ -272,5 +287,6 @@ def calibInterp(filename, polvar = 'Zh', gate = None, res_azim_interp = 0.4,res_
 valuesdict = {
     'Zh':[-10.0,40.0],
     'Zv':[-10.0,40.0],
-    'Zdr':[-4.0,6.0]}
+    'Zdr':[-4.0,6.0], 
+    'Sw':[0.0, 13]}
 

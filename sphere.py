@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from matplotlib import gridspec
 from matplotlib  import cm
-from ProfileLab.Configfiles.config_pl import generate_polvar_metadata
-from ProfileLab.Computes.conversion import Conversion
+from .config_pl import generate_polvar_metadata
+from .conversion import Conversion
 import scipy.optimize as opt
 from scipy.interpolate import griddata
 import warnings
@@ -281,21 +281,27 @@ class GaussSphere():
         
         ax4.text(0.5,-0.4, axtext, fontsize = 7)
             
-    def plot_selection(self):
+    def plot_selection(self, polvar = None):
         """
         plots a figure indicating the data which was selected to perform the
         2D gaussian fit (only valid for plot_all function)
         
         Parameters
         ----------
-        None
+        polvar, str : polarimetric variable, if set to None, the self.var
+            will be used
         
         Returns
         -------
         None
         """
         
-        ind, select = self.data_2drad()
+        ind, select = self.data_2drad(polvar = polvar)
+        
+        if polvar is None:
+            pldata = self.data[self.gate]
+        else:
+            pldata = self.file_handle.variables[polvar][self.gate]
         
         # find max min values
         
@@ -305,6 +311,10 @@ class GaussSphere():
         elif self.var == 'Zh':
             vmin = -10.
             vmax = 40.
+        elif polvar is not None:
+            metadata = generate_polvar_metadata(polvar)
+            vmin = metadata['valid_min']
+            vmax = metadata['valid_max']
         else:
             metadata = generate_polvar_metadata(self.var)
             vmin = metadata['valid_min']
@@ -312,7 +322,7 @@ class GaussSphere():
             
         fig = plt.figure()
         plt.hold(True)
-        plt.scatter(self.azimuth, self.elevation, c=self.data[self.gate], marker = 's', cmap = plt.cm.jet,
+        plt.scatter(self.azimuth, self.elevation, c=pldata, marker = 's', cmap = plt.cm.jet,
                     vmin = vmin, vmax = vmax)
         plt.scatter(np.take(self.azimuth, ind), np.take(self.elevation,ind), marker = 'o', 
                     facecolors='none', edgecolors='w') 
@@ -879,7 +889,7 @@ class GaussSphere():
                 
         return ind, select
         
-    def data_2drad(self):
+    def data_2drad(self, polvar = None):
         """
         finds the optimum value and data around it according to circle of 
         radius self.doa and stops at minval < self.cutdB which can then 
@@ -887,7 +897,8 @@ class GaussSphere():
         
         Parameters
         ----------
-        None
+        polvar, str : if given, extracts data for polvar instead of for the
+            polvar given in self.polvar
         
         Returns
         -------
@@ -897,10 +908,18 @@ class GaussSphere():
         
         """
         # select data
-        data_s = self.data[self.gate,:]
-        
+        if polvar is None:
+            data_e = self.data[self.gate,:]
+            data_s = self.data[self.gate,:]
+            maxval = self.cutdB 
+        else:
+            data_e = self.data[self.gate,:]
+            data_s = self.file_handle.variables[polvar][self.gate, :] 
+            maxval = -9999.
+            
+                
         # find location max value
-        max_i = np.nanargmax(data_s)
+        max_i = np.nanargmax(data_e)
         
         if self.azim is None:
             azimmid = self.azimuth[max_i]
@@ -925,7 +944,7 @@ class GaussSphere():
             if np.sqrt((x - azimmid)**2 + (y-elevmid)**2) <= self.doa:
                 if np.isnan(data_s[i]):
                     pass
-                elif data_s[i] < self.cutdB:
+                elif data_s[i] < maxval:
                     pass
                 else:
                     ind.append(i)
@@ -1081,12 +1100,12 @@ class GaussSphere():
         None
         """
         
-        file_handle=Dataset(self.filename,'r')
+        self.file_handle=Dataset(self.filename,'r')
         
-        self.azimuth = file_handle.variables['Azimuth'][:]
-        self.elevation = file_handle.variables['Elevation'][:]
-        self.range_r = file_handle.variables['Range'][:]
-        self.data = file_handle.variables[self.var][:] 
+        self.azimuth = self.file_handle.variables['Azimuth'][:]
+        self.elevation = self.file_handle.variables['Elevation'][:]
+        self.range_r = self.file_handle.variables['Range'][:]
+        self.data = self.file_handle.variables[self.var][:] 
        
     
     def find_gate(self):
